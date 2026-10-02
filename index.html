@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f7fe0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Drawings">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>INDEX of Drawings</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#edf0f3; --panel:#fff; --panel-2:#f5f7f9; --line:#d9e0e6;
+    --text:#14212b; --muted:#5f6f7c;
+    --green:#1fb872; --amber:#f5a623; --red:#e0483e;
+    --accent:#0f6a8b; --accent-dim:#e1f1f6;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Vazirmatn',Tahoma,Arial,sans-serif; padding:24px 16px; }
+  .page{ max-width:1100px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; box-shadow:0 1px 2px rgba(20,30,40,.04); }
+  .header{ position:relative; padding:20px; text-align:center; }
+  .eyebrow{ color:var(--muted); font-size:13px; margin:0 0 6px; }
+  .title{ font-size:26px; font-weight:700; margin:0; }
+  .sub{ color:var(--accent); font-size:14px; margin:4px 0 0; }
+  .icon-btn{ position:absolute; top:14px; left:14px; background:var(--panel-2); border:1px solid var(--line); color:var(--muted); border-radius:8px; font-size:14px; cursor:pointer; padding:6px 10px; font-family:inherit; }
+  .grid{ display:grid; grid-template-columns:320px 1fr; gap:14px; align-items:start; }
+  @media(max-width:760px){ .grid{ grid-template-columns:1fr; } }
+
+  .tree-head{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--line); font-weight:600; font-size:14px; }
+  .tree{ padding:8px; max-height:calc(100vh - 260px); min-height:120px; overflow:auto; }
+  .node{ display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:14px; }
+  .node:hover{ background:var(--panel-2); }
+  .node.sel{ background:var(--accent-dim); color:var(--accent); font-weight:600; }
+  .caret{ width:14px; color:var(--muted); font-size:11px; text-align:center; flex-shrink:0; }
+  .lamp{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .lamp.on{ background:var(--green); box-shadow:0 0 6px 1px rgba(31,184,114,.5); }
+  .lamp.off{ background:var(--amber); box-shadow:0 0 6px 1px rgba(245,166,35,.45); }
+  .nname{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .acts{ display:flex; gap:2px; }
+  .acts button{ background:none; border:none; cursor:pointer; font-size:14px; padding:3px 5px; border-radius:6px; }
+  .acts button:hover{ background:#fff; }
+  .empty{ color:var(--muted); font-size:13px; text-align:center; padding:26px 12px; line-height:1.9; }
+
+  .viewer{ display:flex; flex-direction:column; height:calc(100vh - 200px); min-height:460px; overflow:hidden; }
+  .toolbar{ display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--line); font-size:14px; }
+  .toolbar .vt{ flex:1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .toolbar .pg{ color:var(--muted); font-size:12px; }
+  .tbtn{ background:var(--panel-2); border:1px solid var(--line); border-radius:8px; min-width:34px; padding:5px 9px; cursor:pointer; font-family:inherit; font-size:14px; }
+  .tbtn:disabled{ opacity:.4; cursor:default; }
+  .tbtn{ white-space:nowrap; }
+  .trow{ display:contents; }                       /* روی کامپیوتر مثل قبل در یک ردیف */
+  .zg{ display:inline-flex; align-items:center; gap:6px; }
+  .zg .pg{ min-width:42px; text-align:center; }
+  @media(max-width:760px){
+    .toolbar{ flex-direction:column; align-items:stretch; gap:8px; padding:8px 10px; }
+    .trow{ display:flex; align-items:center; gap:8px; flex-wrap:nowrap; }
+    .t2 .vsearch{ flex:1; min-width:0; width:auto; }
+    .t2 .pg{ min-width:46px; text-align:center; }
+    .t3{ justify-content:space-between; }
+    .t3 .tbtn{ flex:1; }
+    .t3 .zg{ flex:0 0 auto; }
+    .t3 .zg .tbtn{ flex:0 0 auto; min-width:40px; }
+  }
+  .spin{ display:inline-block; width:18px; height:18px; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:sp .8s linear infinite; vertical-align:middle; margin-inline-end:8px; }
+  @keyframes sp{ to{ transform:rotate(360deg); } }
+  .treeload{ display:flex; align-items:center; justify-content:center; padding:28px 12px; color:var(--muted); font-size:13px; }
+  .stage{ flex:1; overflow:auto; background:#dfe6ec; padding:12px; cursor:grab; user-select:none; -webkit-user-select:none; }
+  .stage.drag{ cursor:grabbing; }
+  .pages{ display:flex; flex-direction:column; align-items:center; min-width:max-content; }
+  .pw{ position:relative; margin-bottom:12px; }
+  .pages canvas{ display:block; background:#fff; box-shadow:0 2px 8px rgba(20,30,40,.18); pointer-events:none; }
+  .hl{ position:absolute; background:rgba(245,166,35,.4); outline:1px solid rgba(245,166,35,.9); border-radius:2px; pointer-events:none; }
+  .hl.cur{ background:rgba(224,72,62,.45); outline-color:var(--red); }
+  .tsearch,.vsearch{ border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:13px; padding:7px 10px; background:#fff; }
+  .tsearch{ width:calc(100% - 16px); margin:8px 8px 0; }
+  .vsearch{ width:150px; }
+  .toolbar{ flex-wrap:wrap; }
+  .viewer:fullscreen{ height:100vh; border-radius:0; border:none; }
+  .viewer.pfs{ position:fixed; inset:0; z-index:40; height:100vh; border-radius:0; }
+  .hint{ color:var(--muted); font-size:14px; text-align:center; padding:60px 20px; line-height:2; }
+
+  .btn{ border:none; border-radius:8px; padding:9px 16px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-save{ background:var(--accent); color:#fff; }
+  .btn-cancel{ background:var(--panel-2); color:var(--text); border:1px solid var(--line); }
+  .btn-sm{ padding:5px 10px; font-size:12px; }
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(20,30,40,.45); display:none; align-items:center; justify-content:center; z-index:50; }
+  .modal-box{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; width:300px; }
+  .modal-box h3{ margin:0 0 12px; font-size:15px; }
+  .modal-box input{ width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:14px; margin-bottom:14px; }
+  .btn-row{ display:flex; gap:8px; justify-content:flex-end; }
+  .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:9px 16px; border-radius:8px; font-size:13px; display:none; z-index:60; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  @media print{ body *{ display:none !important; } body::after{ content:'چاپ نقشه‌ها غیرفعال است'; display:block; } }
+
+  /* ---- تم مهندسی: برق، ابزاردقیق و اتوماسیون ---- */
+  .header{ text-align:start; padding:26px 24px 38px; border:0; border-top:4px solid #f2a900; color:#fff; overflow:hidden;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='none' stroke='%235fc3e0' stroke-opacity='.2' stroke-width='1.2'%3E%3Cpath d='M0 40H50L70 60H110V20H160'/%3E%3Cpath d='M160 110H120L100 130H60V160'/%3E%3Cpath d='M40 0V30L60 50'/%3E%3Cpath d='M0 120H30L45 105'/%3E%3Ccircle cx='110' cy='60' r='3'/%3E%3Ccircle cx='60' cy='130' r='3'/%3E%3Ccircle cx='45' cy='105' r='2.5'/%3E%3Ccircle cx='60' cy='50' r='2.5'/%3E%3C/g%3E%3C/svg%3E") 0 0/160px 160px, linear-gradient(135deg,#0c2233 0%,#123a52 100%); box-shadow:0 2px 10px rgba(12,34,51,.25); }
+  .header::after{ content:""; position:absolute; left:0; right:0; bottom:6px; height:24px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='24'%3E%3Cg fill='none' stroke='%23f2a900' stroke-opacity='.6' stroke-width='1.4' stroke-linejoin='round'%3E%3Cpath d='M0 12H40L45 5L53 19L61 5L69 19L77 5L82 12H100'/%3E%3Cpath d='M100 12H112M112 4V20M118 4V20M118 12H140'/%3E%3Ccircle cx='148' cy='12' r='3'/%3E%3Cpath d='M151 12H200'/%3E%3C/g%3E%3C/svg%3E") repeat-x center/200px 24px; pointer-events:none; }
+  .eyebrow{ position:relative; color:#f2b93b; font-size:13px; font-weight:500; margin:0 0 6px; }
+  .title{ position:relative; color:#fff; font-size:28px; line-height:1.45; margin:0; }
+  .sub{ position:relative; color:#8fd3e6; font-size:14px; margin:6px 0 0; }
+  .hbtns{ position:absolute; top:18px; left:18px; z-index:1; display:flex; gap:8px; }
+  .hbtns .icon-btn{ position:static; margin:0 !important; background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.3); color:#e6f3f8; }
+  .hbtns .icon-btn:hover{ background:rgba(255,255,255,.18); }
+  .hbtns .icon-btn:focus-visible{ outline:2px solid #f2a900; outline-offset:2px; }
+  @media(max-width:760px){ .hbtns{ position:static; justify-content:flex-start; margin-bottom:12px; } .title{ font-size:22px; } }
+  .node.sel{ box-shadow:inset -3px 0 0 #f2a900; }
+  .btn-save{ background:var(--accent); }
+  .btn-save:hover{ background:#0a5972; }
+  .tbtn:hover:not(:disabled){ border-color:var(--accent); color:var(--accent); }
+  .toast{ background:#0c2233; }
+  .modal-box{ border-top:3px solid #f2a900; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="card header">
+    <div class="hbtns"><button class="icon-btn" id="adminBtn" title="ورود مدیر">⚙ مدیریت</button></div>
+    <p class="eyebrow">مجتمع انرژی و سیالات</p>
+    <h1 class="title">نقشه‌های برق، ابزاردقیق و اتوماسیون</h1>
+    <p class="sub" id="modeTag">حالت مشاهده</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="tree-head">
+        <span>بخش‌ها و زیرمجموعه‌ها</span>
+        <span id="adminTools" style="display:none; gap:6px">
+          <button class="btn btn-save btn-sm" id="addRootBtn">+ بخش جدید</button>
+          <button class="btn btn-cancel btn-sm" id="passBtn">رمز</button>
+          <button class="btn btn-cancel btn-sm" id="logoutBtn">خروج</button>
+        </span>
+      </div>
+      <input class="tsearch" id="treeSearch" placeholder="جستجوی بخش…" aria-label="جستجوی بخش">
+      <div class="tree" id="tree"></div>
+    </div>
+
+    <div class="card viewer">
+      <div class="toolbar">
+        <div class="trow t1"><span class="vt" id="vTitle">نقشه‌ای انتخاب نشده</span><span class="pg" id="vPages"></span></div>
+        <div class="trow t2">
+          <input class="vsearch" id="vSearch" placeholder="جستجو در نقشه…" disabled aria-label="جستجو در نقشه">
+          <button class="tbtn" id="sPrev" disabled aria-label="نتیجه‌ی قبلی">▲</button>
+          <button class="tbtn" id="sNext" disabled aria-label="نتیجه‌ی بعدی">▼</button>
+          <span class="pg" id="vCount"></span>
+        </div>
+        <div class="trow t3">
+          <span class="zg"><button class="tbtn" id="zOut" disabled aria-label="کوچک‌نمایی">−</button><span class="pg" id="zVal">100%</span><button class="tbtn" id="zIn" disabled aria-label="بزرگ‌نمایی">+</button></span>
+          <button class="tbtn" id="zFit" disabled title="برگشت به اندازه‌ی استاندارد: عرض نقشه برابر عرض پنجره (۱۰۰٪)">بازنشانی زوم</button>
+          <button class="tbtn" id="fsBtn" disabled>⛶ تمام‌صفحه</button>
+        </div>
+      </div>
+      <div class="stage" id="stage"><div class="hint" id="hint">یک زیرمجموعه را از فهرست انتخاب کنید تا نقشه‌اش نمایش داده شود.</div><div class="pages" id="pages"></div></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInp" accept="application/pdf,.pdf" style="display:none">
+
+<div id="modal" class="modal-backdrop">
+  <div class="modal-box">
+    <h3 id="mTitle"></h3>
+    <input id="mInput" autocomplete="off">
+    <div class="btn-row">
+      <button class="btn btn-cancel" id="mCancel">انصراف</button>
+      <button class="btn btn-save" id="mOk">تأیید</button>
+    </div>
+  </div>
+</div>
+<div id="offBar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:100;background:#c0392b;color:#fff;text-align:center;padding:8px 12px;font-size:14px;font-weight:600">اتصال اینترنت برقرار نیست</div>
+<div id="upModal" class="modal-backdrop">
+  <div class="modal-box">
+    <h3 id="upTitle">در حال آپلود نقشه…</h3>
+    <div style="height:12px;background:#e6edf2;border-radius:6px;overflow:hidden"><div id="upBar" style="height:100%;width:0;background:var(--accent);transition:width .25s"></div></div>
+    <div id="upPct" style="text-align:center;margin-top:12px;font-weight:700;font-size:18px">۰٪</div>
+    <div id="upInfo" style="text-align:center;margin-top:4px;color:var(--muted);font-size:13px"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let nodes = [];            // [{id,name,parent,pdf:null|{name,size}}]
+let isAdmin = false, selected = null;
+const openSet = new Set();
+
+/* ---------- ذخیره‌سازی: Google Sheet + Google Drive از طریق Apps Script ---------- */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzMxBEfUUI9cXCMvh1rQNB2ScdHcxHiwy-gvQiDXgr8Wqh4-Bn1bKqwZKsl9OvZzwhb/exec';
+let adminPass = '';
+const OFFLINE_MSG = 'اتصال اینترنت برقرار نیست';
+const isOffline = () => navigator.onLine === false;
+function errText(e){
+  if (isOffline()) return OFFLINE_MSG;
+  if (e && e.name === 'AbortError') return 'سرور پاسخ نداد (زمان انتظار تمام شد)';
+  if (e && (e.name === 'TypeError' || e.message === 'net')) return 'اتصال به سرور برقرار نشد؛ اینترنت یا فیلترشکن را بررسی کنید';
+  return (e && e.message) || String(e);
+}
+async function fetchT(url, opts, ms){
+  if (isOffline()) throw new Error(OFFLINE_MSG);
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 90000);
+  try{ return await fetch(url, { ...opts, signal: ctl.signal }); } finally{ clearTimeout(t); }
+}
+/* حافظه‌ی پنهان مرورگر: نقشه‌ای که یک بار دانلود شد، دفعه‌ی بعد فوری (و حتی بدون اینترنت) باز می‌شود */
+const idb = () => new Promise((res, rej) => { const r = indexedDB.open('maps-cache', 1); r.onupgradeneeded = () => { r.result.createObjectStore('pdf'); r.result.createObjectStore('meta'); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const idbReq = rq => new Promise(res => { rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); });
+async function cacheGet(key){ try{ const db = await idb(); return (await idbReq(db.transaction('pdf').objectStore('pdf').get(key))) || null; }catch(e){ return null; } }
+async function cachePut(key, buf){
+  try{
+    const db = await idb(), tx = db.transaction(['pdf', 'meta'], 'readwrite');
+    tx.objectStore('pdf').put(buf, key); tx.objectStore('meta').put(Date.now(), key);
+    await new Promise(r => { tx.oncomplete = r; tx.onerror = r; tx.onabort = r; });
+    const t2 = db.transaction(['pdf', 'meta'], 'readwrite'), ks = await idbReq(t2.objectStore('meta').getAllKeys()), vs = await idbReq(t2.objectStore('meta').getAll());
+    if (ks && ks.length > 6){   // فقط ۶ نقشه‌ی آخر نگه داشته می‌شود
+      ks.map((k, i) => [k, vs[i]]).sort((a, b) => a[1] - b[1]).slice(0, ks.length - 6).forEach(([k]) => { t2.objectStore('pdf').delete(k); t2.objectStore('meta').delete(k); });
+    }
+  }catch(e){}
+}
+async function gasGet(p){ const r = await fetchT(GAS_URL + '?' + new URLSearchParams(p)); if (!r.ok) throw new Error('net'); return r.json(); }
+async function gasPost(b){
+  const r = await fetchT(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ ...b, pass: adminPass }) });
+  if (!r.ok) throw new Error('net'); return r.json();
+}
+async function saveTree(){ try{ const r = await gasPost({ action: 'set', key: 'tree', value: JSON.stringify(nodes) }); if (!r.ok) throw 0; return true; }catch(e){ toast(isOffline() ? OFFLINE_MSG + '؛ ذخیره نشد' : 'ذخیره نشد؛ اتصال یا رمز را بررسی کنید'); return false; } }
+const dropFiles = ids => { ids = (ids || []).filter(Boolean); if (ids.length) gasPost({ action: 'delete', ids }).catch(() => {}); };
+const toB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+let treeLoading = true, treeError = '';
+async function loadTree(){
+  try{ const r = await gasGet({ action: 'get', key: 'tree' }); nodes = r.value ? JSON.parse(r.value) : []; treeError = ''; try{ localStorage.setItem('tree-cache', JSON.stringify(nodes)); }catch(x){} }
+  catch(e){
+    if (!nodes.length){ try{ nodes = JSON.parse(localStorage.getItem('tree-cache') || '[]'); }catch(x){ nodes = []; } }   // آخرین فهرست ذخیره‌شده (برای حالت بدون اینترنت)
+    treeError = nodes.length ? '' : errText(e);
+    if (!treeLoading || nodes.length) toast(isOffline() ? OFFLINE_MSG + '؛ آخرین فهرست ذخیره‌شده نمایش داده شد' : 'خواندن اطلاعات ممکن نشد');
+  }
+  treeLoading = false; renderTree();
+}
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 2600); }
+
+/* ---------- پنجره‌ی ورودی/تأیید ---------- */
+function ask(title, value, type){
+  return new Promise(resolve => {
+    const m = $('modal'), inp = $('mInput');
+    $('mTitle').textContent = title;
+    inp.style.display = value === undefined ? 'none' : 'block';
+    inp.type = type || 'text'; inp.value = value || '';
+    m.style.display = 'flex'; if (value !== undefined) inp.focus();
+    const done = v => { m.style.display = 'none'; $('mOk').onclick = $('mCancel').onclick = inp.onkeydown = null; resolve(v); };
+    $('mOk').onclick = () => done(value === undefined ? true : inp.value.trim());
+    $('mCancel').onclick = () => done(null);
+    inp.onkeydown = e => { if (e.key === 'Enter') $('mOk').click(); if (e.key === 'Escape') done(null); };
+  });
+}
+
+/* ---------- درخت بخش‌ها ---------- */
+const norm = s => String(s).normalize('NFKC').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).toLowerCase().trim();
+const kids = id => nodes.filter(n => n.parent === id);
+const needsMap = n => n.parent !== null && kids(n.id).length === 0;   // فقط زیرمجموعه‌ی بدون فرزند نقشه می‌خواهد
+const fmtSize = b => b > 1048576 ? (b / 1048576).toFixed(1) + ' مگابایت' : Math.ceil(b / 1024) + ' کیلوبایت';
+
+function renderTree(){
+  const el = $('tree'); el.innerHTML = '';
+  if (treeLoading){ el.innerHTML = '<div class="treeload"><span class="spin"></span>در حال بارگذاری بخش‌ها…</div>'; return; }
+  if (treeError && !nodes.length){ el.innerHTML = '<div class="empty">' + treeError + '<br><button class="btn btn-cancel btn-sm" id="treeRetry" style="margin-top:10px">تلاش دوباره</button></div>'; $('treeRetry').onclick = () => { treeLoading = true; treeError = ''; renderTree(); loadTree(); }; return; }
+  $('modeTag').textContent = isAdmin ? 'حالت مدیر — امکان افزودن و ویرایش' : 'حالت مشاهده';
+  $('adminTools').style.display = isAdmin ? 'flex' : 'none';
+  $('adminBtn').style.display = isAdmin ? 'none' : '';
+  if (!nodes.length){
+    el.innerHTML = `<div class="empty">${isAdmin ? 'هنوز بخشی تعریف نشده.<br>با «+ بخش جدید» شروع کنید.' : 'هنوز نقشه‌ای ثبت نشده است.'}</div>`;
+    return;
+  }
+  const q = norm($('treeSearch').value);
+  const hit = n => norm(n.name).includes(q) || kids(n.id).some(hit);
+  if (q && !nodes.some(hit)){ el.innerHTML = '<div class="empty">بخشی با این نام پیدا نشد.</div>'; return; }
+  (function build(pid, depth){
+    kids(pid).filter(n => !q || hit(n)).forEach(n => {
+      const hasKids = kids(n.id).length > 0;
+      const isOpen = q || openSet.has(n.id);
+      const row = document.createElement('div');
+      row.className = 'node' + (n.id === selected ? ' sel' : '');
+      row.style.paddingRight = (10 + depth * 18) + 'px';
+      row.tabIndex = 0;
+      row.innerHTML = `<span class="caret">${hasKids ? (isOpen ? '▼' : '◀') : ''}</span><span class="lamp ${n.pdf ? 'on' : 'off'}" ${needsMap(n) || n.pdf ? '' : 'style="visibility:hidden"'} title="${n.pdf ? 'نقشه دارد' : 'نقشه ندارد'}"></span><span class="nname"></span>`;
+      row.querySelector('.nname').textContent = n.name;
+      if (isAdmin){
+        const acts = document.createElement('span'); acts.className = 'acts';
+        [['＋','افزودن زیرمجموعه',() => addNode(n.id)],
+         ...(needsMap(n) || n.pdf ? [['📎', n.pdf ? 'جایگزینی نقشه' : 'آپلود نقشه', () => pickFile(n)]] : []),
+         ['✎','تغییر نام',() => renameNode(n)],
+         ['🗑','حذف',() => deleteNode(n)]].forEach(([ic, tt, fn]) => {
+          const b = document.createElement('button'); b.textContent = ic; b.title = tt; b.setAttribute('aria-label', tt);
+          b.onclick = e => { e.stopPropagation(); fn(); }; acts.appendChild(b);
+        });
+        row.appendChild(acts);
+      }
+      const go = () => {
+        if (hasKids){ openSet.has(n.id) ? openSet.delete(n.id) : openSet.add(n.id); }
+        if (n.pdf) viewNode(n); else { if (selected === n.id || !n.pdf) { selected = n.id; clearViewer(n); } renderTree(); }
+      };
+      row.onclick = go; row.onkeydown = e => { if (e.key === 'Enter') go(); };
+      el.appendChild(row);
+      if (hasKids && isOpen) build(n.id, depth + 1);
+    });
+  })(null, 0);
+}
+
+async function addNode(parent){
+  const pn = parent && nodes.find(x => x.id === parent);
+  if (pn && pn.pdf && !await ask(`«${pn.name}» نقشه دارد؛ با افزودن زیرمجموعه، نقشه‌ی خود این بخش حذف می‌شود. ادامه می‌دهید؟`)) return;
+  const name = await ask(parent ? 'نام زیرمجموعه' : 'نام بخش جدید', '');
+  if (!name) return;
+  if (pn && pn.pdf){ dropFiles(pn.pdf.parts); pn.pdf = null; }
+  const n = { id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name, parent: parent || null, pdf: null };
+  nodes.push(n); if (parent) openSet.add(parent);
+  await saveTree(); renderTree();
+}
+async function renameNode(n){
+  const name = await ask('نام جدید', n.name);
+  if (!name) return;
+  n.name = name; await saveTree(); renderTree();
+  if (selected === n.id) $('vTitle').textContent = name;
+}
+async function deleteNode(n){
+  const ids = []; (function walk(id){ ids.push(id); kids(id).forEach(k => walk(k.id)); })(n.id);
+  const extra = ids.length > 1 ? ` (به‌همراه ${ids.length - 1} زیرمجموعه)` : '';
+  if (!await ask(`«${n.name}»${extra} و نقشه‌هایش حذف شود؟`)) return;
+  nodes.filter(x => ids.includes(x.id) && x.pdf).forEach(x => dropFiles(x.pdf.parts));
+  nodes = nodes.filter(x => !ids.includes(x.id));
+  await saveTree();
+  if (ids.includes(selected)){ selected = null; clearViewer(); }
+  renderTree();
+}
+
+$('treeSearch').oninput = renderTree;
+
+/* ---------- آپلود (فقط ادمین) ---------- */
+let uploadTarget = null;
+function pickFile(n){ if (!isAdmin) return; uploadTarget = n; $('fileInp').click(); }
+$('fileInp').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  const n = uploadTarget; if (!f || !n || !isAdmin) return;
+  if (isOffline()) return toast(OFFLINE_MSG + '؛ آپلود انجام نشد');
+  if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') return toast('فقط فایل PDF قابل قبول است');
+  if (f.size > 30 * 1048576) return toast('حجم فایل بیش از ۳۰ مگابایت است');
+  const CH = 5 * 1048576, total = f.size, cnt = Math.ceil(total / CH);
+  const done = new Array(cnt).fill(0), started = new Array(cnt).fill(0), sizes = new Array(cnt).fill(0), parts = new Array(cnt);
+  let shown = 0, avg = 5000, finished = 0, next = 0, failed = null;     // avg: میانگین زمان آپلود یک تکه (میلی‌ثانیه)
+  const fa = v => Math.round(v).toLocaleString('fa-IR');
+  const paint = (p, info) => { $('upBar').style.width = p + '%'; $('upPct').textContent = fa(p) + '٪'; $('upInfo').textContent = info || ''; };
+  // پیشرفت نرم: تکه‌های در حال ارسال به‌صورت تخمینی (تا ۹۰٪ تکه) جلو می‌روند و با تمام‌شدن واقعی، کامل می‌شوند
+  const tick = () => {
+    let bytes = 0; const now = Date.now();
+    for (let i = 0; i < cnt; i++){
+      if (done[i]) bytes += sizes[i];
+      else if (started[i]) bytes += sizes[i] * 0.9 * Math.min(1, (now - started[i]) / (avg * 1.2));
+    }
+    shown = Math.max(shown, Math.min(99, Math.floor(bytes / total * 100)));
+    paint(shown, fmtSize(Math.min(bytes, total)) + ' از ' + fmtSize(total));
+  };
+  $('upTitle').textContent = 'در حال آپلود نقشه…'; $('upBar').style.background = 'var(--accent)';
+  paint(0, ''); $('upModal').style.display = 'flex';
+  const timer = setInterval(tick, 150);
+  const worker = async () => {
+    while (next < cnt && !failed){
+      const i = next++, blob = f.slice(i * CH, (i + 1) * CH); sizes[i] = blob.size;
+      const data = await toB64(blob);
+      for (let a = 1; a <= 3 && !failed; a++){
+        started[i] = Date.now();
+        try{
+          const r = await gasPost({ action: 'upload', name: f.name + '.part', data });
+          if (!r.ok) throw new Error(r.error || 'up');
+          avg = (avg * finished + (Date.now() - started[i])) / (finished + 1); finished++;
+          parts[i] = r.id; done[i] = 1; break;
+        }catch(err){ started[i] = 0; if (a === 3) failed = err; }
+      }
+    }
+  };
+  try{
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    if (failed) throw failed;
+    shown = 99; paint(99, 'در حال ذخیره‌ی نقشه…');
+    if (n.pdf) dropFiles(n.pdf.parts);
+    n.pdf = { name: f.name, size: f.size, parts };
+    if (!await saveTree()) throw new Error('ذخیره‌ی فهرست');
+    clearInterval(timer);
+    paint(100, fmtSize(total) + ' از ' + fmtSize(total));
+    $('upTitle').textContent = '✓ نقشه با موفقیت آپلود شد'; $('upBar').style.background = 'var(--green)';
+    renderTree(); toast('نقشه با موفقیت آپلود شد');
+    await new Promise(r => setTimeout(r, 1400));
+    $('upModal').style.display = 'none';
+    if (selected === n.id || !selected) viewNode(n);
+  }catch(err){
+    clearInterval(timer); $('upModal').style.display = 'none';
+    dropFiles(parts.filter(Boolean));
+    toast('آپلود نشد: ' + errText(err) + (isOffline() ? '' : ' — اتصال، رمز یا فضای گوگل را بررسی کنید'));
+  }
+};
+
+/* ---------- نمایشگر (بدون دکمه‌ی دانلود/چاپ) ---------- */
+let pdfDoc = null, zoom = 1, token = 0, fitW = 1, pageCtx = {}, textCache = {}, charCache = {}, matches = [], cur = -1;
+const stage = $('stage');
+function setZoomUI(on){ ['zIn','zOut','zFit','fsBtn','vSearch','sPrev','sNext'].forEach(i => $(i).disabled = !on); $('zVal').textContent = Math.round(zoom * 100) + '%'; }
+function clearViewer(n){
+  token++; loadId++; curItems = []; pill.style.display = 'none'; drawHook = null; if (pdfDoc){ pdfDoc.destroy(); pdfDoc = null; }
+  pageCtx = {}; textCache = {}; charCache = {}; matches = []; cur = -1; $('vSearch').value = ''; $('vCount').textContent = '';
+  $('pages').innerHTML = ''; $('vPages').textContent = ''; setZoomUI(false);
+  $('vTitle').textContent = n ? n.name : 'نقشه‌ای انتخاب نشده';
+  $('hint').style.display = 'block';
+  $('hint').textContent = !n ? 'یک زیرمجموعه را از فهرست انتخاب کنید تا نقشه‌اش نمایش داده شود.'
+    : kids(n.id).length ? 'یکی از زیرمجموعه‌های این بخش را انتخاب کنید.'
+    : needsMap(n) ? 'برای این زیرمجموعه هنوز نقشه‌ای ثبت نشده است.' : 'این بخش هنوز زیرمجموعه‌ای ندارد.';
+}
+let workerReady = false;
+async function ensurePdfjs(){
+  if (!window.pdfjsLib) throw new Error('lib');
+  if (workerReady) return;
+  const url = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const txt = await (await fetch(url)).text();
+  pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([txt], { type: 'text/javascript' }));
+  workerReady = true;
+}
+const pill = document.createElement('div');
+pill.style.cssText = 'display:none;position:absolute;z-index:20;top:70px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.18);padding:12px 18px;min-width:240px;text-align:center;font-size:13px';
+pill.innerHTML = '<div id="lpTxt" style="margin-bottom:8px;color:var(--muted)"></div><div style="height:8px;background:#e6edf2;border-radius:5px;overflow:hidden"><div id="lpBar" style="height:100%;width:0;background:var(--accent);transition:width .2s"></div></div><div id="lpPct" style="margin-top:8px;font-weight:700;font-size:16px"></div><div style="margin-top:4px;font-size:10px;color:#9aa7b2">نسخه ۸</div>';
+let loadId = 0;   // شمارنده‌ی جدا برای بارگذاری (draw هم token را زیاد می‌کند)
+let showLoad = (p, msg) => {};
+async function viewNode(n){
+  selected = n.id; renderTree(); clearViewer(n);
+  const tk = loadId, fa = v => Math.round(v).toLocaleString('fa-IR');
+  $('hint').textContent = 'در حال بارگذاری نقشه…';
+  showLoad = (p, msg) => {
+    if (tk !== loadId) return;
+    viewerEl.style.position = 'relative'; if (!pill.parentNode) viewerEl.appendChild(pill);
+    pill.style.display = 'block'; $('lpTxt').textContent = msg; $('lpBar').style.width = p + '%'; $('lpPct').textContent = fa(p) + '٪';
+  };
+  const hideLoad = () => { if (tk === loadId) pill.style.display = 'none'; };
+  let timer = null, rtimer = null;
+  try{
+    if (!n.pdf){ $('hint').textContent = 'فایل این نقشه پیدا نشد؛ مدیر باید دوباره آپلود کند.'; return; }
+    const ckey = n.pdf.parts.join(',');
+    let out = null;
+    const cached = await cacheGet(ckey);
+    if (tk !== loadId) return;
+    if (cached){ out = new Uint8Array(cached); showLoad(70, 'باز کردن نقشه‌ی ذخیره‌شده روی این دستگاه…'); }
+    else{
+      if (isOffline()) throw new Error(OFFLINE_MSG);
+      // مرحله‌ی ۱: دانلود تکه‌ها (۰ تا ۷۰٪) — با ۶ درخواست هم‌زمان؛ پیشرفت بین تکه‌ها نرم تخمین زده می‌شود
+      const N = n.pdf.parts.length, arr = new Array(N), started = new Array(N).fill(0), done = new Array(N).fill(0);
+      let next = 0, avg = 4000, fin = 0, shown = 0;
+      const tick = () => {
+        const now = Date.now(); let units = 0;
+        for (let i = 0; i < N; i++) units += done[i] ? 1 : started[i] ? 0.9 * Math.min(1, (now - started[i]) / (avg * 1.2)) : 0;
+        shown = Math.max(shown, Math.min(70, Math.floor(units / N * 70)));
+        showLoad(shown, 'در حال دریافت نقشه از سرور…');
+      };
+      tick(); timer = setInterval(tick, 150);
+      const worker = async () => {
+        while (next < N && tk === loadId){
+          const i = next++; started[i] = Date.now();
+          let ok = false;
+          for (let a = 1; a <= 3 && !ok; a++){
+            try{
+              const r = await gasGet({ action: 'file', id: n.pdf.parts[i] });
+              if (!r.data) throw new Error(r.error || 'file');
+              arr[i] = new Uint8Array(await (await fetch('data:application/octet-stream;base64,' + r.data)).arrayBuffer()); ok = true;
+            }catch(e){ started[i] = Date.now(); if (a === 3) throw e; }
+          }
+          avg = (avg * fin + (Date.now() - started[i])) / (fin + 1); fin++; done[i] = 1;
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(6, N) }, worker));
+      clearInterval(timer); timer = null;
+      if (tk !== loadId) return;
+      out = new Uint8Array(arr.reduce((a, b) => a + b.length, 0)); let p = 0;
+      arr.forEach(b => { out.set(b, p); p += b.length; });
+      cachePut(ckey, out.buffer.slice(0));
+    }
+    // مرحله‌ی ۲ و ۳: پردازش فایل (۷۵ تا ۹۰٪) و رسم اولین صفحه‌ها (تا ۱۰۰٪). عدد همیشه آرام جلو می‌رود تا ثابت نماند
+    let phase = 'parse', t0 = Date.now(), renderStart = 0, cur = 75;
+    const msgs = { parse: 'در حال آماده‌سازی نقشه…', build: 'در حال آماده‌سازی صفحه‌ها…', render: 'در حال رسم اولین صفحه‌ها…' };
+    const pulse = () => {
+      const target = phase === 'render' ? 90 + 8 * (1 - Math.exp(-(Date.now() - renderStart) / 6000)) : 75 + 14 * (1 - Math.exp(-(Date.now() - t0) / 10000));
+      cur = Math.max(cur, Math.min(98, target));
+      showLoad(Math.floor(cur), msgs[phase]);
+    };
+    pulse(); rtimer = setInterval(pulse, 200);
+    await ensurePdfjs();
+    const doc = await pdfjsLib.getDocument({ data: out, cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/', cMapPacked: true, standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/', disableFontFace: true, useSystemFonts: false }).promise;
+    if (tk !== loadId){ doc.destroy(); return; }
+    pdfDoc = doc; zoom = 1;
+    $('vPages').textContent = doc.numPages + ' صفحه';
+    $('hint').style.display = 'none';
+    drawHook = (mode, k, total) => {
+      if (mode === 'build'){
+        if (phase === 'parse') phase = 'build';
+        cur = Math.max(cur, 75 + Math.floor(15 * k / total));
+      }else if (mode === 'built'){ phase = 'render'; renderStart = Date.now(); setTimeout(() => { if (rtimer){ clearInterval(rtimer); rtimer = null; drawHook = null; hideLoad(); } }, 45000); }
+      else if (mode === 'first'){ clearInterval(rtimer); rtimer = null; drawHook = null; showLoad(100, 'نقشه آماده است'); setTimeout(hideLoad, 500); }
+    };
+    await draw();   // پایان کار با اولین صفحه‌ی رسم‌شده (hook 'first') اعلام می‌شود
+  }catch(e){
+    if (timer) clearInterval(timer); if (rtimer) clearInterval(rtimer); drawHook = null; hideLoad();
+    console.error('VIEWERR', e && e.stack || e); if (tk === loadId) $('hint').textContent = (isOffline() ? OFFLINE_MSG + '. ' : 'نمایش نقشه ممکن نشد (' + errText(e) + '). ') + 'بعد از برقراری اتصال دوباره روی نقشه بزنید.';
+  }
+}
+let drawHook = null;
+let io = null, curItems = [];
+async function draw(restore){
+  if (!pdfDoc) return;
+  const my = ++token, host = $('pages'); setZoomUI(true);
+  if (io){ io.disconnect(); io = null; }
+  const Q = Math.min(3, Math.max(2, window.devicePixelRatio || 1)), MAXPIX = 16e6, N = pdfDoc.numPages;   // رسم با تراکم پیکسلی بالا (حداقل ۲ برابر) برای وضوح نقشه
+  // صفحه‌ها دسته‌ای و هم‌زمان خوانده می‌شوند
+  const pages = [];
+  for (let i = 1; i <= N; i += 12){
+    const b = await Promise.all(Array.from({ length: Math.min(12, N - i + 1) }, (_, k) => pdfDoc.getPage(i + k)));
+    if (my !== token) return;
+    pages.push(...b);
+    if (drawHook) drawHook('build', pages.length, N);
+  }
+  // همه‌ی صفحه‌ها با اندازه‌ی درست ساخته می‌شوند (بدون پاک‌کردن نمایش قبلی)، بعد یک‌جا جایگزین می‌شوند
+  const items = [], frag = document.createDocumentFragment(), ctxs = {};
+  pages.forEach((page, k) => {
+    const i = k + 1, w1 = page.getViewport({ scale: 1 }).width;
+    fitW = (stage.clientWidth - 24) / w1;
+    const cssVp = page.getViewport({ scale: fitW * zoom }), area = cssVp.width * cssVp.height;
+    let q = Q; if (area * q * q > MAXPIX) q = Math.max(.5, Math.sqrt(MAXPIX / area));
+    const vp = page.getViewport({ scale: fitW * zoom * q });
+    const c = document.createElement('canvas');
+    c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+    c.style.width = cssVp.width + 'px'; c.style.height = cssVp.height + 'px';
+    const wrap = document.createElement('div'); wrap.className = 'pw'; wrap.appendChild(c); frag.appendChild(wrap);
+    ctxs[i] = { wrap, vp: cssVp };
+    items.push({ i, page, c, vp, wrap, state: 0 });
+  });
+  // جایگزین سفیدی: تصویر قبلی هر صفحه (کم‌وضوح) تا آماده‌شدن نسخه‌ی تیز نشان داده می‌شود
+  items.forEach((it, k) => {
+    const o = curItems[k];
+    if (o && o.state === 2 && o.c.width){ try{ it.c.getContext('2d').drawImage(o.c, 0, 0, it.c.width, it.c.height); it.ph = true; }catch(e){} }
+  });
+  curItems = items;
+  host.innerHTML = ''; host.style.transform = ''; host.appendChild(frag); pageCtx = ctxs;
+  if (restore){   // همان نقطه‌ی صفحه دوباره زیر همان نقطه‌ی صفحه‌ی نمایش قرار می‌گیرد
+    const w = host.children[restore.k];
+    if (w){
+      const r = w.getBoundingClientRect();
+      stage.scrollLeft += r.left + restore.ax * r.width - restore.px;
+      stage.scrollTop += r.top + restore.ay * r.height - restore.py;
+    }
+  }
+  // رندر تنبل: فقط صفحه‌هایی که نزدیک صفحه‌ی نمایش هستند رسم می‌شوند؛ با اسکرول بقیه رسم می‌شوند
+  if (drawHook) drawHook('built', 0, N);
+  const queue = []; let active = 0, firstDone = false;
+  const pump = () => {
+    while (active < 2 && queue.length){
+      queue.sort((a, b) => Math.abs(a.wrap.getBoundingClientRect().top + a.wrap.offsetHeight / 2 - stage.getBoundingClientRect().top - stage.clientHeight / 2) - Math.abs(b.wrap.getBoundingClientRect().top + b.wrap.offsetHeight / 2 - stage.getBoundingClientRect().top - stage.clientHeight / 2));
+      const it = queue.shift(); if (it.state) continue;
+      it.state = 1; active++;
+      let tgt = it.c;
+      if (it.ph){ tgt = document.createElement('canvas'); tgt.width = it.c.width; tgt.height = it.c.height; }   // روی بوم موقت رسم می‌شود تا تصویر قبلی وسط کار سفید نشود
+      it.page.render({ canvasContext: tgt.getContext('2d'), viewport: it.vp }).promise
+        .then(() => { if (my !== token) return; if (it.ph){ const x = it.c.getContext('2d'); x.clearRect(0, 0, it.c.width, it.c.height); x.drawImage(tgt, 0, 0); } it.state = 2; paintPage(it.i); if (!firstDone){ firstDone = true; if (drawHook) drawHook('first', 1, N); } })
+        .catch(() => { it.state = 0; })
+        .finally(() => { active--; if (my === token) pump(); });
+    }
+  };
+  io = new IntersectionObserver(es => {
+    es.forEach(e => { const it = items[Array.prototype.indexOf.call(host.children, e.target)]; if (it && e.isIntersecting && !it.state && !queue.includes(it)) queue.push(it); });
+    pump();
+  }, { root: stage, rootMargin: '900px 0px' });
+  items.forEach(it => io.observe(it.wrap));
+}
+
+/* ---------- جستجو داخل نقشه (روی متن قابل انتخاب PDF) ---------- */
+async function pageText(i){
+  if (!textCache[i]) textCache[i] = (await (await pdfDoc.getPage(i)).getTextContent()).items.filter(it => 'str' in it);
+  return textCache[i];
+}
+function paintPage(i){
+  const c = pageCtx[i]; if (!c || !textCache[i]) return;
+  c.wrap.querySelectorAll('.hl').forEach(e => e.remove());
+  matches.forEach((m, k) => {
+    if (m.p !== i) return;
+    m.segs.forEach(g => {
+      const it = textCache[i][g.o], t = pdfjsLib.Util.transform(c.vp.transform, it.transform);
+      const h = Math.hypot(t[2], t[3]) || 10, full = it.width * c.vp.scale, len = it.str.length || 1;
+      const off = it.dir === 'rtl' ? full * (1 - (g.s + g.n) / len) : full * g.s / len;
+      const d = document.createElement('div'); d.className = 'hl' + (k === cur ? ' cur' : '');
+      d.style.cssText = `left:${t[4] + off}px;top:${t[5] - h}px;width:${Math.max(full * g.n / len, 4)}px;height:${h * 1.15}px`;
+      c.wrap.appendChild(d);
+    });
+  });
+}
+const paintAll = () => Object.keys(pageCtx).forEach(k => paintPage(+k));   // کلیدها رشته‌اند؛ باید عدد شوند تا نتیجه‌ها علامت بخورند
+function showCount(msg){ $('vCount').textContent = msg || (matches.length ? `${cur + 1} از ${matches.length}` : 'نتیجه‌ای نیست'); }
+// حروف را یکسان‌سازی می‌کند (فرم‌های اتصالی عربی، ی/ي، ارقام) و فاصله/نیم‌فاصله/اعراب را کنار می‌گذارد
+const SKIP = /[\s\u200c\u200d\u0640\u064b-\u065f\u0670]/;
+function normChars(str){
+  const out = [];
+  for (let i = 0; i < str.length; i++)
+    for (const ch of norm(str[i])) if (!SKIP.test(ch)) out.push({ c: ch, i });
+  return out;
+}
+async function pageChars(i){
+  if (charCache[i]) return charCache[i];
+  const items = await pageText(i), chars = [];
+  items.forEach((it, o) => normChars(it.str).forEach(x => chars.push({ c: x.c, o, i: x.i })));
+  return charCache[i] = { chars, text: chars.map(x => x.c).join('') };
+}
+async function doSearch(){
+  const q = normChars($('vSearch').value).map(x => x.c).join(''); matches = []; cur = -1;
+  if (!pdfDoc || !q){ paintAll(); $('vCount').textContent = ''; return; }
+  $('vCount').textContent = 'در حال جستجو…';
+  const my = token; let anyText = false;
+  for (let i = 1; i <= pdfDoc.numPages; i++){
+    const { chars, text } = await pageChars(i); if (my !== token) return;
+    if (text) anyText = true;
+    let p = text.indexOf(q);
+    while (p >= 0){
+      const segs = {};
+      for (let k = p; k < p + q.length; k++){
+        const x = chars[k], g = segs[x.o] || (segs[x.o] = { o: x.o, a: x.i, b: x.i + 1 });
+        g.a = Math.min(g.a, x.i); g.b = Math.max(g.b, x.i + 1);
+      }
+      matches.push({ p: i, segs: Object.values(segs).map(g => ({ o: g.o, s: g.a, n: g.b - g.a })) });
+      p = text.indexOf(q, p + q.length);
+    }
+  }
+  cur = matches.length ? 0 : -1;
+  paintAll();
+  showCount(anyText ? '' : 'این نقشه متن قابل جستجو ندارد (نقشه تصویری/اسکن‌شده است)');
+  focusMatch();
+}
+function focusMatch(){ const e = stage.querySelector('.hl.cur'); if (e) e.scrollIntoView({ block: 'center', inline: 'center' }); }
+function stepMatch(d){
+  if (!matches.length) return;
+  cur = (cur + d + matches.length) % matches.length;
+  paintAll(); showCount(''); focusMatch();
+}
+let lastQ = '';
+$('vSearch').onkeydown = e => {
+  if (e.key !== 'Enter') return;
+  const q = norm($('vSearch').value);
+  if (q === lastQ && matches.length) stepMatch(e.shiftKey ? -1 : 1); else { lastQ = q; doSearch(); }
+};
+$('vSearch').oninput = () => { if (!$('vSearch').value) { lastQ = ''; doSearch(); } };
+$('sNext').onclick = () => stepMatch(1);
+$('sPrev').onclick = () => stepMatch(-1);
+
+/* ---------- تمام‌صفحه ---------- */
+const viewerEl = document.querySelector('.viewer');
+const isFs = () => document.fullscreenElement === viewerEl || viewerEl.classList.contains('pfs');
+function afterFs(){
+  $('fsBtn').textContent = isFs() ? '✕ خروج از تمام‌صفحه' : '⛶ تمام‌صفحه';
+  clearTimeout(afterFs.t); afterFs.t = setTimeout(() => { if (pdfDoc) setZoom(zoom); }, 200);
+}
+$('fsBtn').onclick = async () => {
+  if (isFs()){ viewerEl.classList.remove('pfs'); if (document.fullscreenElement) await document.exitFullscreen().catch(() => {}); afterFs(); return; }
+  if (viewerEl.requestFullscreen){ try{ await viewerEl.requestFullscreen(); return; }catch(e){} }
+  viewerEl.classList.add('pfs'); afterFs();   // مرورگرهایی که تمام‌صفحه‌ی واقعی ندارند (مثل آیفون)
+};
+document.addEventListener('fullscreenchange', afterFs);
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && viewerEl.classList.contains('pfs')){ viewerEl.classList.remove('pfs'); afterFs(); } });
+
+const mkRestore = (px, py) => {
+  if (!pdfDoc) return null;
+  let best = null, bd = 1e9;
+  Array.from($('pages').children).forEach((w, k) => {
+    const r = w.getBoundingClientRect(), d = py < r.top ? r.top - py : py > r.bottom ? py - r.bottom : 0;
+    if (d < bd){ bd = d; best = { k, r }; }
+  });
+  return best && { k: best.k, ax: (px - best.r.left) / best.r.width, ay: (py - best.r.top) / best.r.height, px, py };
+};
+const setZoom = (z, restore) => {
+  if (restore === undefined){ const r = stage.getBoundingClientRect(); restore = mkRestore(r.left + r.width / 2, r.top + r.height / 2); }
+  zoom = Math.max(.4, Math.min(4, z)); $('zVal').textContent = Math.round(zoom * 100) + '%'; return draw(restore);
+};
+$('zIn').onclick = () => setZoom(zoom * 1.25);
+$('zOut').onclick = () => setZoom(zoom / 1.25);
+$('zFit').onclick = () => setZoom(1);
+
+// کشیدن نقشه با ماوس برای جابه‌جایی
+let drag = null;
+stage.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; drag = { x: e.clientX, y: e.clientY, l: stage.scrollLeft, t: stage.scrollTop }; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); });
+stage.addEventListener('pointermove', e => { if (!drag) return; stage.scrollLeft = drag.l - (e.clientX - drag.x); stage.scrollTop = drag.t - (e.clientY - drag.y); });
+stage.addEventListener('pointerup', () => { drag = null; stage.classList.remove('drag'); });
+
+// زوم با دو انگشت (گوشی/تبلت) + حرکت با یک انگشت (اسکرول معمولی)
+stage.style.touchAction = 'pan-x pan-y';
+let pz = null;
+const tDist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+stage.addEventListener('touchstart', e => {
+  if (e.touches.length === 2 && pdfDoc){
+    const t = e.touches, mx = (t[0].clientX + t[1].clientX) / 2, my = (t[0].clientY + t[1].clientY) / 2;
+    const pr = $('pages').getBoundingClientRect();
+    pz = { d: tDist(t), z: zoom, s: 1, mx, my, cx: mx, cy: my, ox: mx - pr.left, oy: my - pr.top, restore: mkRestore(mx, my) };
+    $('pages').style.transformOrigin = pz.ox + 'px ' + pz.oy + 'px';
+  }
+}, { passive: true });
+stage.addEventListener('touchmove', e => {
+  if (!pz || e.touches.length !== 2) return;
+  e.preventDefault();
+  const target = Math.max(.4, Math.min(4, pz.z * tDist(e.touches) / pz.d));
+  pz.s = target / pz.z;
+  pz.cx = (e.touches[0].clientX + e.touches[1].clientX) / 2; pz.cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+  $('pages').style.transform = 'translate(' + (pz.cx - pz.mx) + 'px,' + (pz.cy - pz.my) + 'px) scale(' + pz.s + ')';
+  $('zVal').textContent = Math.round(target * 100) + '%';
+}, { passive: false });
+const endPinch = () => {
+  if (!pz) return; const p = pz; pz = null;
+  if (Math.abs(p.s - 1) < 0.02){ $('pages').style.transform = ''; return; }
+  setZoom(p.z * p.s, p.restore && { ...p.restore, px: p.cx, py: p.cy });   // نمایش بزرگ‌شده تا آماده‌شدن نسخه‌ی تیز نگه داشته می‌شود
+};
+stage.addEventListener('touchend', e => { if (pz && e.touches.length < 2) endPinch(); });
+stage.addEventListener('touchcancel', () => { if (pz) endPinch(); });
+
+// جلوگیری از ذخیره/چاپ/منوی راست‌کلیک روی نقشه
+stage.addEventListener('contextmenu', e => e.preventDefault());
+stage.addEventListener('dragstart', e => e.preventDefault());
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && ['s', 'p', 'u'].includes(e.key.toLowerCase())) e.preventDefault();
+});
+
+/* ---------- ورود مدیر (رمز در سمت سرور بررسی می‌شود) ---------- */
+$('adminBtn').onclick = async () => {
+  const v = await ask('ورود به پنل مدیریت', '', 'password');
+  if (v === null) return;
+  adminPass = v.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  try{
+    const r = await gasPost({ action: 'auth' });
+    if (r.ok){ isAdmin = true; renderTree(); return; }
+    adminPass = ''; toast('رمز اشتباه است');
+  }catch(e){
+    adminPass = ''; toast(errText(e));
+  }
+};
+$('logoutBtn').onclick = () => { isAdmin = false; adminPass = ''; renderTree(); };
+$('addRootBtn').onclick = () => addNode(null);
+$('passBtn').style.display = 'none';   // تغییر رمز: داخل Code.gs
+
+const offBar = () => { $('offBar').style.display = isOffline() ? 'block' : 'none'; };
+window.addEventListener('offline', offBar);
+window.addEventListener('online', () => { offBar(); toast('اینترنت وصل شد'); if (!isAdmin) loadTree(); });
+offBar();
+renderTree(); loadTree();
+setInterval(() => { if (!isAdmin) loadTree(); }, 60000);
+
+/* ---------- PWA: ثبت Service Worker و دکمه‌ی نصب ---------- */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  const hadCtl = !!navigator.serviceWorker.controller; let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadCtl && !reloaded){ reloaded = true; location.reload(); } });
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(() => {}));
+}
+let installEvt = null;
+const instBtn = document.createElement('button');
+instBtn.className = 'icon-btn'; instBtn.id = 'installBtn'; instBtn.textContent = '⬇ نصب برنامه'; instBtn.style.display = 'none';
+$('adminBtn').parentNode.insertBefore(instBtn, $('adminBtn').nextSibling);
+instBtn.style.marginInlineStart = '8px';
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (!matchMedia('(display-mode: standalone)').matches) instBtn.style.display = ''; });
+instBtn.onclick = async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice.catch(() => {}); installEvt = null; instBtn.style.display = 'none'; };
+window.addEventListener('appinstalled', () => { instBtn.style.display = 'none'; toast('برنامه نصب شد'); });
+</script>
+</body>
+</html>
